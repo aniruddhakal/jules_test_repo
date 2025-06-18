@@ -1,0 +1,11 @@
+# Core Chatbot Dependencies
+pyyaml
+langchain
+langchain-openai
+langchain-google-genai # For Gemini models
+langchain-community # For local models and other community integrations eventually
+langgraph
+
+# For development and linting (optional, but good practice)
+# autopep8
+# pylint

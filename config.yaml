@@ -1,0 +1,30 @@
+# Chatbot Configuration File
+
+# LLM Provider Settings
+# provider: "openai"  # Supported: "openai", "google_gemini", "local" (local is a placeholder for now)
+# provider: "google_gemini"
+provider: "openai" # Defaulting to openai for initial development
+
+openai_settings:
+  model: "gpt-3.5-turbo" # Example model
+  api_key_env_var: "OPENAI_API_KEY" # Environment variable that stores the API key
+
+google_gemini_settings:
+  model: "gemini-pro" # Example model
+  api_key_env_var: "GOOGLE_API_KEY" # Environment variable that stores the API key
+
+local_settings: # Placeholder for future local model integration
+  model_path: "/path/to/your/local/model.gguf" # Example, actual setup will be more complex
+  # Other local model parameters (e.g., n_ctx, n_gpu_layers) could go here
+
+# Fallback LLM for intent/entity extraction if primary fails or for simple tasks
+# This could be a smaller, faster model or even the regex based one as a last resort.
+# For now, this is a placeholder for future enhancement.
+fallback_llm:
+  enabled: false
+  # provider: "regex" # or another LLM provider
+
+# Logging settings (placeholder)
+logging:
+  level: "INFO" # DEBUG, INFO, WARNING, ERROR
+  file: "chatbot.log"

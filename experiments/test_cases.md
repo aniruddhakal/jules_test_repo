@@ -1,7 +1,10 @@
 # Chatbot Test Cases
 
-This document outlines test cases for evaluating the generative chatbot's functionality,
-policy adherence, and API integration.
+**Important Note on LLM Usage:** These test cases were initially designed with a simulated LLM. Now that the chatbot integrates with a real Large Language Model (LLM) via Langchain, the "Expected LLM Output" is a guideline for the *type* of information the NLU component should extract (i.e., correct intent and entities). The exact phrasing or confidence of the LLM might vary based on the configured model, its training, and the specific prompt used in `chatbot/llm_integration.py`. The primary goal is to verify if the chatbot takes the correct *actions* based on a reasonable interpretation of the user's query by the LLM.
+
+**Prerequisites for Testing LLM-dependent functionality:**
+*   Ensure the LLM provider is correctly configured in `config.yaml`.
+*   For cloud-based LLMs (e.g., OpenAI, Google Gemini), the relevant API key **must** be set as an environment variable (e.g., `OPENAI_API_KEY`). Without this, the LLM will be unavailable, and tests involving NLU will not reflect actual LLM performance.
 
 ## Orders for Testing:
 
