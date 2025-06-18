@@ -10,6 +10,8 @@ This project implements a generative chatbot that uses a Large Language Model (L
 -   Handles order cancellation requests according to a defined policy (cancellation within 10 days).
 -   Provides order tracking information.
 -   Basic command-line interface for interaction.
+-   Enhanced conversational abilities for general order inquiries.
+-   Topic redirection to keep conversations focused on order management.
 
 ## Project Structure
 
@@ -74,6 +76,11 @@ This project implements a generative chatbot that uses a Large Language Model (L
 ## Running the Chatbot
 
 Once the setup is complete and API keys are configured (if using cloud LLMs):
+
+## Evaluation
+- The `experiments/evaluation_metrics.md` file details a comprehensive set of quantitative and
+  qualitative metrics for assessing chatbot performance and decision-making.
+- Test cases can be found in `experiments/test_cases.md`.
 
 ```bash
 python chatbot/main.py

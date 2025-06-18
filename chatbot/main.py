@@ -1,35 +1,37 @@
 import sys
 import os
 from datetime import datetime, date
+import random # For selecting redirection phrases
 
-# Adjust Python path to include the project root for sibling module imports
+# Adjust Python path
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-# Chatbot components
 try:
-    from chatbot.llm_integration import get_llm_response, llm as llm_instance # also import llm to check availability
+    from chatbot.llm_integration import get_llm_response, llm as llm_instance
     from chatbot import api_client
     from chatbot.policy_engine import is_cancellation_allowed
 except ModuleNotFoundError as e:
-    print(f"Error: A required module was not found. Please ensure all chatbot components are in place: {e}")
-    print("Exiting chatbot.")
+    print(f"Error: A required module was not found: {e}")
     sys.exit(1)
 except ImportError as e:
-    print(f"Error: An import failed. This might be due to issues in the imported modules: {e}")
-    print("Exiting chatbot.")
+    print(f"Error: An import failed: {e}")
     sys.exit(1)
 
+# Redirection phrases
+REDIRECTION_PHRASES = [
+    "I'm designed to help with questions about your orders. Is there anything about your orders I can assist you with today?",
+    "My main purpose is to help you track or cancel orders, or discuss details about them. Do you have any order-related questions?",
+    "That's an interesting point! However, I'm best at handling inquiries about your orders. Can I help you with an order?",
+    "I can assist with order tracking, cancellations, and other order-specific questions. How can I help you with your orders?"
+]
 
 def handle_track_order(entities: dict):
-    """Handles the logic for tracking an order."""
     order_id = entities.get("order_id")
     if not order_id:
-        print("Chatbot: I can help with that! What is the order ID you'd like to track?")
-        # In a real app, you'd wait for user's next input here.
-        # For this CLI version, we'll just ask and move to next turn.
+        print("Chatbot: I can certainly help you track an order! Could you please provide the order ID?")
         return
 
     print(f"Chatbot: Okay, tracking order {order_id}...")
@@ -43,19 +45,17 @@ def handle_track_order(entities: dict):
         print(f"Chatbot: An error occurred while trying to track the order: {e}")
 
 def handle_cancel_order(entities: dict):
-    """Handles the logic for cancelling an order."""
     order_id = entities.get("order_id")
     if not order_id:
-        print("Chatbot: Sure, I can help with cancelling an order. What is the order ID?")
+        print("Chatbot: I can assist with cancelling an order. Could you please provide the order ID?")
         return
 
-    print(f"Chatbot: Attempting to cancel order {order_id}...")
+    print(f"Chatbot: Attempting to process cancellation for order {order_id}...")
     try:
-        # 1. Get order details to check status and date for policy
         order_details_response = api_client.get_order_status(order_id)
 
         if order_details_response.get("status") != "success":
-            print(f"Chatbot: Sorry, I couldn't find order {order_id} to cancel. {order_details_response.get('message', '')}")
+            print(f"Chatbot: Sorry, I couldn't find order {order_id} to proceed with cancellation. {order_details_response.get('message', '')}")
             return
 
         current_status = order_details_response.get("current_status")
@@ -65,24 +65,19 @@ def handle_cancel_order(entities: dict):
 
         order_date_str = order_details_response.get("order_date")
         if not order_date_str:
-            print(f"Chatbot: Could not retrieve order date for {order_id}. Cannot proceed with cancellation policy check.")
+            print(f"Chatbot: Could not retrieve order date for {order_id}. Cannot check cancellation policy.")
             return
 
         try:
-            # The date from our simulated API is already a date object if called directly,
-            # but if it were from a real JSON API, it would be a string.
-            # api_client.get_order_status returns it as an ISO string.
             order_placement_date = date.fromisoformat(order_date_str)
         except ValueError:
             print(f"Chatbot: Invalid date format received for order {order_id}. Cannot check cancellation policy.")
             return
 
-        # 2. Check policy
         if not is_cancellation_allowed(order_placement_date):
-            print(f"Chatbot: I'm sorry, but order {order_id} cannot be cancelled because it was placed more than 10 days ago.")
+            print(f"Chatbot: I'm sorry, but order {order_id} cannot be cancelled because it was placed more than 10 days ago according to our policy.")
             return
 
-        # 3. If policy allows, attempt cancellation
         print(f"Chatbot: Order {order_id} is eligible for cancellation. Proceeding...")
         cancel_response = api_client.request_order_cancellation(order_id)
         if cancel_response.get("status") == "success":
@@ -93,17 +88,22 @@ def handle_cancel_order(entities: dict):
     except Exception as e:
         print(f"Chatbot: An error occurred while trying to cancel the order: {e}")
 
+def handle_general_order_query(entities: dict):
+    """Handles general questions or discussions about orders."""
+    order_id = entities.get("order_id")
+    if order_id:
+        print(f"Chatbot: I understand you have a query about order {order_id}. Could you please tell me more specifically what you need help with regarding this order, such as tracking its status or an issue with an item?")
+    else:
+        print("Chatbot: I can help with general questions about your orders. To assist you better, could you please provide an order ID, or tell me more about what you'd like to discuss regarding your orders?")
 
 def run_chatbot():
-    """Main chatbot interaction loop."""
-    # Check if LLM is available first
-    if not llm_instance: # llm_instance imported from llm_integration
+    if not llm_instance:
         print("Chatbot Critical Error: LLM is not available. Please check your configuration and API keys.")
         print("The chatbot cannot function without an LLM. Exiting.")
         return
 
     print("Chatbot: Hello! I am your Order Management Assistant. How can I help you today?")
-    print("Chatbot: You can ask me to track or cancel an order (e.g., 'track order ORD123', 'cancel my order XYZ789'). Type 'bye' to exit.")
+    print("Chatbot: You can ask me to track, cancel, or discuss your order (e.g., 'track ORD123', 'cancel XYZ789', 'tell me about my order ABC111'). Type 'bye' to exit.")
 
     while True:
         user_query = input("You: ")
@@ -114,10 +114,12 @@ def run_chatbot():
         intent = llm_response.get("intent")
         entities = llm_response.get("entities", {})
 
-        # print(f"DEBUG: LLM Response: Intent='{intent}', Entities='{entities}'") # For debugging
+        # print(f"DEBUG: LLM Response: Intent='{intent}', Entities='{entities}'")
 
-        if intent == "greeting":
-            print("Chatbot: Hello again!")
+        if intent == "off_topic":
+            print(f"Chatbot: {random.choice(REDIRECTION_PHRASES)}")
+        elif intent == "greeting":
+            print("Chatbot: Hello again! How can I assist with your orders?")
         elif intent == "goodbye":
             print("Chatbot: Goodbye! Have a great day.")
             break
@@ -125,25 +127,24 @@ def run_chatbot():
             handle_track_order(entities)
         elif intent == "cancel_order":
             handle_cancel_order(entities)
+        elif intent == "general_order_query":
+            handle_general_order_query(entities)
         elif intent == "unknown":
-            print("Chatbot: I'm sorry, I didn't quite understand that. Could you please rephrase?")
-            print("Chatbot: You can ask me to 'track order [ID]' or 'cancel order [ID]'.")
+            print("Chatbot: I'm sorry, I didn't quite understand that. Could you please rephrase your order-related question?")
         elif intent == "error_llm_unavailable" or intent == "error_llm_processing":
             error_msg = llm_response.get("error_message", "An issue occurred with the language model.")
             print(f"Chatbot: I'm having some technical difficulties at the moment. {error_msg}")
             print("Chatbot: Please try again in a few moments.")
-        else: # Should ideally not happen if intents are well-defined
-            print(f"Chatbot: I received an unexpected intent: {intent}. I'm not sure how to handle that yet.")
+        else:
+            print(f"Chatbot: I received an unexpected intent: {intent}. I'll try my best to help if it's order-related, or you can try rephrasing.")
 
-        print("-" * 20) # Separator for readability
+        print("-" * 20)
 
 if __name__ == "__main__":
-    # Perform initial checks or setup if needed
     print("Starting Chatbot...")
-    # Check if required modules were imported successfully
     if 'get_llm_response' not in globals() or \
        'api_client' not in globals() or \
        'is_cancellation_allowed' not in globals():
-        print("Chatbot could not start due to missing critical components (likely import errors).")
+        print("Chatbot could not start due to missing critical components.")
     else:
         run_chatbot()

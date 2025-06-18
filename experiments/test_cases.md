@@ -121,6 +121,48 @@ Refer to `apis/order_management.py` for specific order details. Here's a summary
 *   **Expected API Response (Cancellation):** Status: `error`, message: "Order ID 'ORD1004' has already been cancelled."
 *   **Expected Chatbot Response:** "Order ORD1004 has already been cancelled."
 
+### TC-013: General Order Discussion (With Order ID)
+
+*   **User Input:** "Can you tell me more about my order ORD1002?"
+*   **Expected LLM Output (Guideline):** Intent: `general_order_query`, Entities: `{'order_id': 'ORD1002'}`
+*   **Expected Action:** Chatbot calls `handle_general_order_query({"order_id": "ORD1002"})`.
+*   **Expected Chatbot Response:** "Chatbot: I understand you have a query about order ORD1002. Could you please tell me more specifically what you need help with regarding this order, such as tracking its status or an issue with an item?" (Or similar, based on `main.py` logic)
+
+### TC-014: General Order Discussion (Without Order ID)
+
+*   **User Input:** "I have a question about one of my recent orders."
+*   **Expected LLM Output (Guideline):** Intent: `general_order_query`, Entities: `{}`
+*   **Expected Action:** Chatbot calls `handle_general_order_query({})`.
+*   **Expected Chatbot Response:** "Chatbot: I can help with general questions about your orders. To assist you better, could you please provide an order ID, or tell me more about what you'd like to discuss regarding your orders?" (Or similar)
+
+### TC-015: Off-Topic Query - Clear Case
+
+*   **User Input:** "What's the weather like in London today?"
+*   **Expected LLM Output (Guideline):** Intent: `off_topic`, Entities: `{}`
+*   **Expected Action:** Chatbot identifies 'off_topic' intent.
+*   **Expected Chatbot Response:** One of the redirection phrases (e.g., "I'm designed to help with questions about your orders. Is there anything about your orders I can assist you with today?")
+
+### TC-016: Off-Topic Query - Ambiguous but Unrelated
+
+*   **User Input:** "Do you sell shoes?"
+*   **Expected LLM Output (Guideline):** Intent: `off_topic`, Entities: `{}`
+*   **Expected Action:** Chatbot identifies 'off_topic' intent.
+*   **Expected Chatbot Response:** One of the redirection phrases.
+
+### TC-017: Conversational Handling of Missing Order ID (Tracking - Updated prompt check)
+
+*   **User Input:** "Track my order."
+*   **Expected LLM Output (Guideline):** Intent: `track_order`, Entities: `{}`
+*   **Expected Action:** Chatbot calls `handle_track_order({})`.
+*   **Expected Chatbot Response:** "Chatbot: I can certainly help you track an order! Could you please provide the order ID?" (Verifying the more conversational prompt)
+
+### TC-018: Conversational Handling of Missing Order ID (Cancellation - Updated prompt check)
+
+*   **User Input:** "I need to cancel something."
+*   **Expected LLM Output (Guideline):** Intent: `cancel_order`, Entities: `{}`
+*   **Expected Action:** Chatbot calls `handle_cancel_order({})`.
+*   **Expected Chatbot Response:** "Chatbot: I can assist with cancelling an order. Could you please provide the order ID?" (Verifying the more conversational prompt)
+
 ---
 ## Evaluation Notes:
 
